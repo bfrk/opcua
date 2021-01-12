@@ -105,7 +105,7 @@ Session::securityPolicyString(const std::string &policy)
 }
 
 void
-Session::showSecurityClient()
+Session::showClientSecurity()
 {
     UaStatus status;
     SessionSecurityInfo securityInfo;
