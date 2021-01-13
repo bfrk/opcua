@@ -302,6 +302,8 @@ SessionUaSdk::connect()
 
     disconnect(); // Do a proper disconnection before attempting to reconnect
 
+    setupClientSecurityInfo(securityInfo, &name, debug);
+
     ConnectResult secResult = setupSecurity();
     if (secResult) {
         if (!autoConnect || debug)
@@ -621,6 +623,7 @@ SessionUaSdk::showSecurity ()
         return;
     }
 
+    setupClientSecurityInfo(securityInfo, &name, debug);
     setupIdentity();
 
     for (OpcUa_UInt32 i = 0; i < applicationDescriptions.length(); i++) {
@@ -773,7 +776,7 @@ SessionUaSdk::setupSecurity ()
                         bool save = true;
                         struct stat info;
                         if (stat(securitySaveRejectedDir.c_str(), &info) != 0) {
-                            int status = mkdir(securitySaveRejectedDir.c_str(), 0777);
+                            int status = mkdir(securitySaveRejectedDir.c_str(), 0700);
                             if (status) {
                                 std::cout << "Session " << name
                                           << ": (setupSecurity) cannot create directory for "
@@ -783,7 +786,7 @@ SessionUaSdk::setupSecurity ()
                             }
                         }
                         if (save) {
-                            UaString fileName = UaString("%1/%2 [%3].cer")
+                            UaString fileName = UaString("%1/%2 [%3].der")
                                                     .arg(securitySaveRejectedDir.c_str())
                                                     .arg(id.commonName)
                                                     .arg(cert.thumbPrint().toHex());
@@ -1291,7 +1294,6 @@ SessionUaSdk::initHook (initHookState state)
         errlogPrintf("OPC UA: Autoconnecting sessions\n");
         for (auto &it : sessions) {
             it.second->markConnectionLoss();
-            it.second->initClientSecurity();
             if (it.second->autoConnect)
                 it.second->connect();
         }
