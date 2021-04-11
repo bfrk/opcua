@@ -17,6 +17,7 @@
 
 #include <link.h>
 #include <shareLib.h>
+#include <epicsString.h>
 #include <epicsThread.h>
 #include <callback.h>
 #include <recSup.h>
@@ -196,6 +197,35 @@ RecordConnector::findRecordConnector (const std::string &name)
         return nullptr;
     }
     result = static_cast<RecordConnector *>(static_cast<dbCommon *>(entry.precnode->precord)->dpvt);
+    dbFinishEntry(&entry);
+    return result;
+}
+
+std::set<RecordConnector *>
+RecordConnector::glob(const std::string &pattern)
+{
+    DBENTRY entry;
+    long status;
+    std::set<RecordConnector *> result;
+
+    dbInitEntry(pdbbase, &entry);
+    status = dbFirstRecordType(&entry);
+    while (!status) {
+        status = dbFirstRecord(&entry);
+        while (!status) {
+            char *pname = dbGetRecordName(&entry);
+            if (epicsStrGlobMatch(pname, pattern.c_str())
+                && (!(dbFindField(&entry, "RTYP") || strcmp(dbGetString(&entry), "opcuaItem"))
+                    || !(dbFindField(&entry, "DTYP") || strcmp(dbGetString(&entry), "OPCUA")))) {
+                RecordConnector *rc = static_cast<RecordConnector *>(
+                    static_cast<dbCommon *>(entry.precnode->precord)->dpvt);
+                if (rc)
+                    result.insert(rc);
+            }
+            status = dbNextRecord(&entry);
+        }
+        status = dbNextRecordType(&entry);
+    }
     dbFinishEntry(&entry);
     return result;
 }
